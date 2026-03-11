@@ -14,10 +14,41 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleRecordingComplete = useCallback((blob: Blob) => {
+  const handleRecordingComplete = useCallback(async (blob: Blob) => {
     setAudioBlob(blob)
     setError(null)
-  }, [])
+    
+    // Auto-generate titles when recording is complete
+    setIsLoading(true)
+    setTitles([])
+
+    try {
+      const formData = new FormData()
+      formData.append("audio", blob, "recording.webm")
+      // Also include text if available
+      if (textInput.trim()) {
+        formData.append("text", textInput.trim())
+      }
+
+      const response = await fetch("/api/generate-titles", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate titles")
+      }
+
+      setTitles(data.titles || [])
+      setAudioBlob(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [textInput])
 
   const handleGenerateTitles = async () => {
     if (!textInput.trim() && !audioBlob) {
@@ -90,9 +121,9 @@ export default function Home() {
                 onRecordingComplete={handleRecordingComplete}
                 isDisabled={isLoading}
               />
-              {audioBlob && (
+              {audioBlob && !isLoading && (
                 <p className="text-center text-sm text-primary mt-2">
-                  Audio recorded! Click generate or add text below.
+                  Audio ready. You can also use the button below to generate with text.
                 </p>
               )}
             </div>
