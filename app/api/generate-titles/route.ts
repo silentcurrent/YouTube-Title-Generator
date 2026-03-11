@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     if (!webhookUrl) {
       // Demo mode: return mock titles when no webhook is configured
       console.log("[v0] N8N_WEBHOOK_URL not configured, using demo mode")
-      
+
       const topic = text || "your video idea"
       const mockTitles = [
         `10 Secrets About ${topic} Nobody Tells You`,
