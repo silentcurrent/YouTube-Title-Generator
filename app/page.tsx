@@ -21,6 +21,17 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
+  // Reset state for continuous generation
+  const handleModalClose = useCallback((open: boolean) => {
+    setIsModalOpen(open)
+    if (!open) {
+      // Clear previous results when modal closes to allow fresh generation
+      setTitles([])
+      setTextInput("")
+      setError(null)
+    }
+  }, [])
+
   const handleRecordingComplete = useCallback(async (blob: Blob) => {
     setAudioBlob(blob)
     setError(null)
@@ -206,7 +217,7 @@ export default function Home() {
       </div>
 
       {/* Results Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      <Dialog open={isModalOpen} onOpenChange={handleModalClose}>
         <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-center">
@@ -215,6 +226,15 @@ export default function Home() {
           </DialogHeader>
           <div className="mt-4">
             <TitleResults titles={titles} />
+          </div>
+          <div className="mt-6 pt-4 border-t border-border">
+            <Button
+              onClick={() => handleModalClose(false)}
+              className="w-full"
+              variant="outline"
+            >
+              Record Again
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
