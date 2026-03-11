@@ -48,7 +48,7 @@ export default function Home() {
         formData.append("text", textInput.trim())
       }
 
-      const response = await fetch("/api/generate-titles", {
+      const response = await fetch("https://hustlexxx.app.n8n.cloud/webhook/voice-storm", {
         method: "POST",
         body: formData,
       })
@@ -59,7 +59,9 @@ export default function Home() {
         throw new Error(data.error || "Failed to generate titles")
       }
 
-      setTitles(data.titles || [])
+      // Handle response - n8n may return titles in different formats
+      const generatedTitles = data.titles || data.output || (Array.isArray(data) ? data : [])
+      setTitles(generatedTitles)
       setAudioBlob(null)
       setIsModalOpen(true)
     } catch (err) {
@@ -88,7 +90,7 @@ export default function Home() {
         formData.append("audio", audioBlob, "recording.webm")
       }
 
-      const response = await fetch("/api/generate-titles", {
+      const response = await fetch("https://hustlexxx.app.n8n.cloud/webhook/voice-storm", {
         method: "POST",
         body: formData,
       })
@@ -99,7 +101,9 @@ export default function Home() {
         throw new Error(data.error || "Failed to generate titles")
       }
 
-      setTitles(data.titles || [])
+      // Handle response - n8n may return titles in different formats
+      const generatedTitles = data.titles || data.output || (Array.isArray(data) ? data : [])
+      setTitles(generatedTitles)
       setAudioBlob(null)
       setIsModalOpen(true)
     } catch (err) {
