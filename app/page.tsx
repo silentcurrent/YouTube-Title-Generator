@@ -1,0 +1,175 @@
+"use client"
+
+import { useState, useCallback } from "react"
+import { Sparkles, Loader2, Youtube } from "lucide-react"
+import { VoiceRecorder } from "@/components/VoiceRecorder"
+import { TitleResults } from "@/components/TitleResults"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+
+export default function Home() {
+  const [textInput, setTextInput] = useState("")
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
+  const [titles, setTitles] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleRecordingComplete = useCallback((blob: Blob) => {
+    setAudioBlob(blob)
+    setError(null)
+  }, [])
+
+  const handleGenerateTitles = async () => {
+    if (!textInput.trim() && !audioBlob) {
+      setError("Please enter text or record your voice first")
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+    setTitles([])
+
+    try {
+      const formData = new FormData()
+      if (textInput.trim()) {
+        formData.append("text", textInput.trim())
+      }
+      if (audioBlob) {
+        formData.append("audio", audioBlob, "recording.webm")
+      }
+
+      const response = await fetch("/api/generate-titles", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate titles")
+      }
+
+      setTitles(data.titles || [])
+      setAudioBlob(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <main className="min-h-screen bg-background">
+      {/* Background gradient effect */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[500px] bg-primary/15 blur-[100px] rounded-full" />
+        <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] bg-accent/15 blur-[100px] rounded-full" />
+      </div>
+
+      <div className="relative z-10 container mx-auto px-4 py-16 md:py-24">
+        {/* Header */}
+        <header className="text-center mb-12 md:mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
+            <Youtube className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-primary">AI-Powered Tool</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 text-balance">
+            YouTube Title Generator
+          </h1>
+          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto text-pretty">
+            Speak or type your idea and generate powerful YouTube titles that drive clicks and engagement.
+          </p>
+        </header>
+
+        {/* Main Input Card */}
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-lg shadow-primary/5">
+            {/* Voice Recorder */}
+            <div className="mb-8">
+              <VoiceRecorder
+                onRecordingComplete={handleRecordingComplete}
+                isDisabled={isLoading}
+              />
+              {audioBlob && (
+                <p className="text-center text-sm text-primary mt-2">
+                  Audio recorded! Click generate or add text below.
+                </p>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-4 mb-8">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-sm text-muted-foreground">or type your idea</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
+            {/* Text Input */}
+            <div className="mb-6">
+              <textarea
+                value={textInput}
+                onChange={(e) => {
+                  setTextInput(e.target.value)
+                  setError(null)
+                }}
+                placeholder="Type your video topic or idea..."
+                disabled={isLoading}
+                className={cn(
+                  "w-full min-h-[120px] p-4 rounded-xl resize-none",
+                  "bg-input border border-border text-foreground placeholder:text-muted-foreground",
+                  "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent",
+                  "transition-all duration-200",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Example: &ldquo;How to grow a YouTube channel in 2026&rdquo;
+              </p>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20">
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            )}
+
+            {/* Generate Button */}
+            <Button
+              onClick={handleGenerateTitles}
+              disabled={isLoading || (!textInput.trim() && !audioBlob)}
+              size="lg"
+              className="w-full h-14 text-base font-semibold rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Generating Titles...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-5 w-5" />
+                  Generate Titles
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Results */}
+          {titles.length > 0 && (
+            <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <TitleResults titles={titles} />
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <footer className="text-center mt-16">
+          <p className="text-sm text-muted-foreground">
+            Powered by AI • Built for content creators
+          </p>
+        </footer>
+      </div>
+    </main>
+  )
+}
