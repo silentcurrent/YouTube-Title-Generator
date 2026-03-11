@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -227,6 +228,9 @@ export default function Home() {
             <DialogTitle className="text-xl font-semibold text-center">
               Generated Titles
             </DialogTitle>
+            <DialogDescription className="text-center text-muted-foreground">
+              Click on any title to copy it to your clipboard
+            </DialogDescription>
           </DialogHeader>
           <div className="mt-4">
             <TitleResults titles={titles} />
