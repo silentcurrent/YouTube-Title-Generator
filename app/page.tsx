@@ -5,6 +5,12 @@ import { Sparkles, Loader2, Youtube } from "lucide-react"
 import { VoiceRecorder } from "@/components/VoiceRecorder"
 import { TitleResults } from "@/components/TitleResults"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 
 export default function Home() {
@@ -13,6 +19,7 @@ export default function Home() {
   const [titles, setTitles] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const handleRecordingComplete = useCallback(async (blob: Blob) => {
     setAudioBlob(blob)
@@ -43,6 +50,7 @@ export default function Home() {
 
       setTitles(data.titles || [])
       setAudioBlob(null)
+      setIsModalOpen(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
@@ -82,6 +90,7 @@ export default function Home() {
 
       setTitles(data.titles || [])
       setAudioBlob(null)
+      setIsModalOpen(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
@@ -186,13 +195,7 @@ export default function Home() {
             </Button>
           </div>
 
-          {/* Results */}
-          {titles.length > 0 && (
-            <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <TitleResults titles={titles} />
-            </div>
-          )}
-        </div>
+          </div>
 
         {/* Footer */}
         <footer className="text-center mt-16">
@@ -201,6 +204,20 @@ export default function Home() {
           </p>
         </footer>
       </div>
+
+      {/* Results Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-center">
+              Generated Titles
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            <TitleResults titles={titles} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }

@@ -28,9 +28,6 @@ export function TitleResults({ titles }: TitleResultsProps) {
 
   return (
     <div className="w-full space-y-4">
-      <h2 className="text-xl font-semibold text-foreground text-center">
-        Generated Titles
-      </h2>
       <div className="grid gap-3">
         {explanation && (
           <div className="rounded-xl p-4 bg-muted/50 border border-border">
