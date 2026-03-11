@@ -5,6 +5,12 @@ import { Sparkles, Loader2, Youtube } from "lucide-react"
 import { VoiceRecorder } from "@/components/VoiceRecorder"
 import { TitleResults } from "@/components/TitleResults"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 
 export default function Home() {
@@ -13,11 +19,57 @@ export default function Home() {
   const [titles, setTitles] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const handleRecordingComplete = useCallback((blob: Blob) => {
+  // Reset state for continuous generation
+  const handleModalClose = useCallback((open: boolean) => {
+    setIsModalOpen(open)
+    if (!open) {
+      // Clear previous results when modal closes to allow fresh generation
+      setTitles([])
+      setTextInput("")
+      setError(null)
+    }
+  }, [])
+
+  const handleRecordingComplete = useCallback(async (blob: Blob) => {
     setAudioBlob(blob)
     setError(null)
-  }, [])
+    
+    // Auto-generate titles when recording is complete
+    setIsLoading(true)
+    setTitles([])
+
+    try {
+      const formData = new FormData()
+      formData.append("audio", blob, "recording.webm")
+      // Also include text if available
+      if (textInput.trim()) {
+        formData.append("text", textInput.trim())
+      }
+
+      const response = await fetch("https://hustlexxx.app.n8n.cloud/webhook/voice-storm", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate titles")
+      }
+
+      // Handle response - n8n may return titles in different formats
+      const generatedTitles = data.titles || data.output || (Array.isArray(data) ? data : [])
+      setTitles(generatedTitles)
+      setAudioBlob(null)
+      setIsModalOpen(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [textInput])
 
   const handleGenerateTitles = async () => {
     if (!textInput.trim() && !audioBlob) {
@@ -38,7 +90,7 @@ export default function Home() {
         formData.append("audio", audioBlob, "recording.webm")
       }
 
-      const response = await fetch("/api/generate-titles", {
+      const response = await fetch("https://hustlexxx.app.n8n.cloud/webhook/voice-storm", {
         method: "POST",
         body: formData,
       })
@@ -49,8 +101,11 @@ export default function Home() {
         throw new Error(data.error || "Failed to generate titles")
       }
 
-      setTitles(data.titles || [])
+      // Handle response - n8n may return titles in different formats
+      const generatedTitles = data.titles || data.output || (Array.isArray(data) ? data : [])
+      setTitles(generatedTitles)
       setAudioBlob(null)
+      setIsModalOpen(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")
     } finally {
@@ -90,9 +145,9 @@ export default function Home() {
                 onRecordingComplete={handleRecordingComplete}
                 isDisabled={isLoading}
               />
-              {audioBlob && (
+              {audioBlob && !isLoading && (
                 <p className="text-center text-sm text-primary mt-2">
-                  Audio recorded! Click generate or add text below.
+                  Audio ready. You can also use the button below to generate with text.
                 </p>
               )}
             </div>
@@ -155,13 +210,7 @@ export default function Home() {
             </Button>
           </div>
 
-          {/* Results */}
-          {titles.length > 0 && (
-            <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <TitleResults titles={titles} />
-            </div>
-          )}
-        </div>
+          </div>
 
         {/* Footer */}
         <footer className="text-center mt-16">
@@ -170,6 +219,29 @@ export default function Home() {
           </p>
         </footer>
       </div>
+
+      {/* Results Modal */}
+      <Dialog open={isModalOpen} onOpenChange={handleModalClose}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-center">
+              Generated Titles
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            <TitleResults titles={titles} />
+          </div>
+          <div className="mt-6 pt-4 border-t border-border">
+            <Button
+              onClick={() => handleModalClose(false)}
+              className="w-full"
+              variant="outline"
+            >
+              Record Again
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }
